@@ -33,6 +33,10 @@ button { padding: 10px 20px; font-size: 16px; }
 <p id="result"></p>
 <p id="answer"></p>
 
+<!-- 音 -->
+<audio id="seikai" src="seikai.mp3"></audio>
+<audio id="zannen" src="zannen.mp3"></audio>
+
 <script>
 const snacks = ["🍩","🍫","🍪","🍎","🍰","🍭","🍿","🧁"];
 
@@ -41,7 +45,17 @@ let selected = [];
 let bestSum = 0;
 let triedWrong = false;
 
-// --- 10通りの組み合わせ生成 ---
+// --- 音再生 ---
+function playSound(id) {
+  const audio = document.getElementById(id);
+  audio.pause();
+  audio.currentTime = 0;
+  audio.play().catch(() => {
+    // 再生失敗時（iOS制限など）は無視
+  });
+}
+
+// --- 組み合わせ ---
 function getCombinations(arr) {
   let comb = [];
   for (let i = 0; i < 5; i++) {
@@ -54,16 +68,14 @@ function getCombinations(arr) {
   return comb;
 }
 
-// --- 条件付きカード生成 ---
+// --- 条件付き生成 ---
 function generateValidCards() {
   while (true) {
     let temp = Array.from({length:5}, () => Math.floor(Math.random()*100)+1);
     let combs = getCombinations(temp);
-
     let under100 = combs.filter(c => (c[0]+c[1]+c[2]) <= 100);
 
     if (under100.length >= 5) {
-      // 最適解も計算
       bestSum = Math.max(...under100.map(c => c[0]+c[1]+c[2]));
       return temp;
     }
@@ -112,22 +124,29 @@ function judge() {
   let sum = selected.reduce((acc, i) => acc + cards[i], 0);
 
   if (sum > 100) {
-    document.getElementById("result").textContent = `合計 ${sum} → 失敗（100オーバー）`;
+    document.getElementById("result").textContent = `合計 ${sum} → 失敗`;
+    playSound("zannen");
     triedWrong = true;
-  } else {
-    let diff = 100 - sum;
-    document.getElementById("result").textContent = `合計 ${sum} → あと ${diff}`;
+    return;
+  }
 
-    if (sum === bestSum) {
-      document.getElementById("result").textContent += "（最適！）";
-      triedWrong = false;
+  let diff = 100 - sum;
+
+  if (sum === bestSum) {
+    document.getElementById("result").textContent =
+      `合計 ${sum} → 最適解！`;
+    playSound("seikai");
+    triedWrong = false;
+  } else {
+    document.getElementById("result").textContent =
+      `合計 ${sum} → あと ${diff}`;
+    playSound("zannen");
+
+    if (triedWrong) {
+      document.getElementById("answer").textContent =
+        `最適解は ${bestSum}`;
     } else {
-      if (triedWrong) {
-        document.getElementById("answer").textContent =
-          `最適解は ${bestSum} です`;
-      } else {
-        triedWrong = true;
-      }
+      triedWrong = true;
     }
   }
 }
