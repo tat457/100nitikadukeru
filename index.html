@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -130,6 +131,19 @@ function generateValidCards() {
   }
 }
 
+function getRandomPhotos(count) {
+  const shuffled = [...photos];
+
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const randomIndex = Math.floor(Math.random() * (i + 1));
+    const current = shuffled[i];
+    shuffled[i] = shuffled[randomIndex];
+    shuffled[randomIndex] = current;
+  }
+
+  return shuffled.slice(0, count);
+}
+
 function generateCards() {
   const container = document.getElementById("cards");
 
@@ -138,11 +152,12 @@ function generateCards() {
   document.getElementById("answer").textContent = "";
 
   cards = generateValidCards();
+  const cardPhotos = getRandomPhotos(5);
   selected = [];
   triedWrong = false;
 
   for (let i = 0; i < 5; i++) {
-    const photo = photos[Math.floor(Math.random() * photos.length)];
+    const photo = cardPhotos[i];
 
     const div = document.createElement("div");
     div.className = "card";
@@ -216,3 +231,4 @@ generateCards();
 
 </body>
 </html>
+```
