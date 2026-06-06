@@ -51,13 +51,21 @@ button {
   padding: 10px 20px;
   font-size: 16px;
 }
+
+.mode-button.active {
+  background: #222;
+  color: white;
+}
 </style>
 </head>
 
 <body>
 
 <h1>100に近づけゲーム</h1>
-<p>5枚から3枚選んで100に近づけよう！（超えたら失敗）</p>
+<p id="rule">5枚から3枚選んで100に近づけよう！（超えたら失敗）</p>
+
+<button id="mode3" class="mode-button active" onclick="setSelectCount(3)">3枚モード</button>
+<button id="mode2" class="mode-button" onclick="setSelectCount(2)">2枚モード</button>
 
 <div id="cards"></div>
 
@@ -86,6 +94,7 @@ let cards = [];
 let selected = [];
 let bestSum = 0;
 let triedWrong = false;
+let selectCount = 3;
 
 function playSound(id) {
   const audio = document.getElementById(id);
@@ -99,17 +108,23 @@ function playSound(id) {
   });
 }
 
-function getCombinations(arr) {
+function getCombinations(arr, count) {
   const comb = [];
 
-  for (let i = 0; i < 5; i++) {
-    for (let j = i + 1; j < 5; j++) {
-      for (let k = j + 1; k < 5; k++) {
-        comb.push([arr[i], arr[j], arr[k]]);
-      }
+  function makeCombination(start, current) {
+    if (current.length === count) {
+      comb.push([...current]);
+      return;
+    }
+
+    for (let i = start; i < arr.length; i++) {
+      current.push(arr[i]);
+      makeCombination(i + 1, current);
+      current.pop();
     }
   }
 
+  makeCombination(0, []);
   return comb;
 }
 
@@ -120,11 +135,15 @@ function generateValidCards() {
       () => Math.floor(Math.random() * 100) + 1
     );
 
-    const combs = getCombinations(temp);
-    const under100 = combs.filter(c => c[0] + c[1] + c[2] <= 100);
+    const combs = getCombinations(temp, selectCount);
+    const under100 = combs.filter(c =>
+      c.reduce((sum, num) => sum + num, 0) <= 100
+    );
 
     if (under100.length >= 5) {
-      bestSum = Math.max(...under100.map(c => c[0] + c[1] + c[2]));
+      bestSum = Math.max(
+        ...under100.map(c => c.reduce((sum, num) => sum + num, 0))
+      );
       return temp;
     }
   }
@@ -141,6 +160,18 @@ function getRandomPhotos(count) {
   }
 
   return shuffled.slice(0, count);
+}
+
+function setSelectCount(count) {
+  selectCount = count;
+
+  document.getElementById("rule").textContent =
+    `5枚から${selectCount}枚選んで100に近づけよう！（超えたら失敗）`;
+
+  document.getElementById("mode2").classList.toggle("active", selectCount === 2);
+  document.getElementById("mode3").classList.toggle("active", selectCount === 3);
+
+  generateCards();
 }
 
 function generateCards() {
@@ -183,22 +214,24 @@ function toggleSelect(index, element) {
     return;
   }
 
-  if (selected.length >= 3) return;
+  if (selected.length >= selectCount) return;
 
   selected.push(index);
   element.classList.add("selected");
 }
 
 function judge() {
-  if (selected.length !== 3) {
-    document.getElementById("result").textContent = "3枚選んでください";
+  if (selected.length !== selectCount) {
+    document.getElementById("result").textContent =
+      `${selectCount}枚選んでください`;
     return;
   }
 
   const sum = selected.reduce((acc, i) => acc + cards[i], 0);
 
   if (sum > 100) {
-    document.getElementById("result").textContent = `合計 ${sum} → 失敗`;
+    document.getElementById("result").textContent =
+      `合計 ${sum} → 失敗`;
     playSound("zannen");
     triedWrong = true;
     return;
